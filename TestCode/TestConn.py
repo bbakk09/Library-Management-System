@@ -84,3 +84,28 @@ def search_books(keyword):
 
 search_books('Python')
 search_books('入门')
+
+def delete_book(book_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT title FROM books where id = %s', (book_id,))
+    book = cursor.fetchone()
+
+    if not book:
+        print(f'错误: ID为{book_id} 的书不存在')
+        cursor.close()
+        conn.close()
+        return
+
+    title = book[0]
+
+    cursor.execute('DELETE FROM books WHERE id = %s', (book_id,))
+    conn.commit()
+
+    print(f'《{title}》已成功删除')
+
+    cursor.close()
+    conn.close()
+
+delete_book(1)
