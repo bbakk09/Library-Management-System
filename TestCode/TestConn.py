@@ -1,24 +1,5 @@
 import pymysql
 
-# 用pymysql的connect来连接数据库
-conn = pymysql.connect(
-    host='localhost',
-    user='root',
-    password='Mysql135',
-    database='library'
-)
-
-# 创建一个游标, 来执行SQL
-cursor = conn.cursor()
-
-cursor.execute('SELECT * FROM books')
-
-rows = cursor.fetchall()
-print(rows)
-
-cursor.close()
-conn.close()
-
 
 def get_connection():
     return pymysql.connect(
@@ -46,7 +27,32 @@ def add_book(title):
     conn.close()
 
 
-add_book('MySQL基础')
+def add_author(author_id, author_name):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = 'INSERT INTO author(author_id, author_name) VALUES (%s, %s)'
+    cursor.execute(sql, (author_id, author_name,))
+
+    conn.commit()
+    print(f'已添加{author_name}的书籍')
+
+    cursor.close()
+    conn.close()
+
+
+def add_isbn(isbn_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = 'INSERT INTO isbn(isbn_id) VALUES (%s)'
+    cursor.execute(sql, (isbn_id,))
+
+    conn.commit()
+    print(f'ISBN为{isbn_id}')
+
+    cursor.close()
+    conn.close()
 
 
 def list_book():
@@ -57,9 +63,6 @@ def list_book():
         print(row)
     cursor.close()
     conn.close()
-
-
-list_book()
 
 
 def search_books(keyword):
@@ -81,9 +84,6 @@ def search_books(keyword):
     cursor.close()
     conn.close()
 
-
-search_books('Python')
-search_books('入门')
 
 def delete_book(book_id):
     conn = get_connection()
@@ -108,6 +108,33 @@ def delete_book(book_id):
     cursor.close()
     conn.close()
 
-delete_book(1)
+
+def update_book_title(book_id, new_title):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT title FROM books WHERE id = %s', (book_id,))
+    old = cursor.fetchone()
+
+    if not old:
+        print(f'错误: ID为{book_id}的书不存在')
+        cursor.close()
+        conn.close()
+        return
+
+    old_title = old[0]
+
+    cursor.execute('UPDATE books SET title = %s WHERE id = %s', (new_title, book_id))
+    conn.commit()
+
+    print(f'《{old_title}》 的书名已修改为《{new_title}》')
+
+    cursor.close()
+    conn.close()
 
 
+if __name__ == '__main__':
+    # add_book('MySQL')
+    # add_author(1, 'MySQL')
+    # add_isbn(1)
+    list_book()
