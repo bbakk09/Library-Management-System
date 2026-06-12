@@ -10,18 +10,15 @@ def get_connection():
     )
 
 
-def add_book(title):
+def add_book(title, total_copies=1):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # 插入数据的SQL
-    sql = 'INSERT INTO books (title) VALUES (%s)'
-    # 注意: 参数必须是一个元组, 所以单元素要加逗号
-    cursor.execute(sql, (title,))
+    sql = 'INSERT INTO books (title, total_copies, available_copies) VALUES (%s, %s, %s)'
+    cursor.execute(sql, (title, total_copies, total_copies))
 
-    # 提交事务, 数据才会写入
     conn.commit()
-    print(f'《{title}》 添加成功! ')
+    print(f'《{title}》添加成功，总册数：{total_copies}，可借：{total_copies}')
 
     cursor.close()
     conn.close()
@@ -133,8 +130,75 @@ def update_book_title(book_id, new_title):
     conn.close()
 
 
+def borrow_book(book_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 查询当前可借册数
+    cursor.execute("SELECT title, available_copies FROM books WHERE id = %s", (book_id,))
+    result = cursor.fetchone()
+
+    if not result:
+        print("图书不存在")
+        cursor.close()
+        conn.close()
+        return
+
+    title, available = result
+    if available <= 0:
+        print(f"《{title}》已经没有可借的册数了")
+        cursor.close()
+        conn.close()
+        return
+
+    # 可借，则减少1
+    cursor.execute("UPDATE books SET available_copies = available_copies - 1 WHERE id = %s", (book_id,))
+    conn.commit()
+    print(f"《{title}》借阅成功！剩余可借：{available - 1}册")
+
+    cursor.close()
+    conn.close()
+
+
+def return_book(book_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT title, available_copies, total_copies FROM books WHERE id = %s", (book_id,))
+    result = cursor.fetchone()
+
+    if not result:
+        print("图书不存在")
+        cursor.close()
+        conn.close()
+        return
+
+    title, available, total = result
+    if available >= total:
+        print(f"《{title}》所有册数都在库，无需归还")
+        cursor.close()
+        conn.close()
+        return
+
+    cursor.execute("UPDATE books SET available_copies = available_copies + 1 WHERE id = %s", (book_id,))
+    conn.commit()
+    print(f"《{title}》归还成功！当前可借：{available + 1}册")
+
+    cursor.close()
+    conn.close()
+
+
 if __name__ == '__main__':
-    # add_book('MySQL')
-    # add_author(1, 'MySQL')
-    # add_isbn(1)
+    # 先添加一本有3册的书（假设id自动生成）
+    add_book("Python编程", 3)
+
+    # 查看所有图书，确认可借册数
+    list_book()
+
+    # 借书（假设该书id为1，请根据实际id修改）
+    borrow_book(1)
+    list_book()
+
+    # 还书
+    return_book(1)
     list_book()
